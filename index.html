@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Finly — умные финансы</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --surface: #0e1419;
+    --surface2: #141b24;
+    --surface3: #1a2433;
+    --green: #00e676;
+    --green-dim: #00e67620;
+    --green-mid: #00e67640;
+    --red: #ff4d6d;
+    --red-dim: #ff4d6d20;
+    --yellow: #ffd60a;
+    --yellow-dim: #ffd60a20;
+    --text: #f0f4f8;
+    --text-muted: #5a7080;
+    --text-dim: #8a9baa;
+    --border: #1e2c3a;
+    --radius: 20px;
+    --radius-sm: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    padding-bottom: 90px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; animation: fadeUp 0.3s ease; }
+  .screen.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* TOP BAR */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px 10px;
+  }
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--green); }
+  .avatar {
+    width: 36px; height: 36px;
+    background: var(--surface3);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  /* BALANCE CARD */
+  .balance-card {
+    margin: 8px 20px 0;
+    background: linear-gradient(135deg, #0d1f2e 0%, #0a1a28 100%);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .balance-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, var(--green-mid) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .balance-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .balance-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 46px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .balance-amount .currency { font-size: 28px; color: var(--text-dim); font-weight: 400; margin-right: 4px; }
+  .balance-edit {
+    position: absolute;
+    top: 24px; right: 20px;
+    background: var(--surface3);
+    border: none;
+    color: var(--text-dim);
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .balance-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .balance-stat { flex: 1; }
+  .balance-stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .balance-stat-value {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--red);
+  }
+  .balance-stat-value.neutral { color: var(--text-dim); }
+
+  /* INSIGHT */
+  .insight-card {
+    margin: 16px 20px 0;
+    background: linear-gradient(135deg, var(--surface) 0%, #0d1c28 100%);
+    border: 1px solid var(--green-mid);
+    border-radius: 18px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .insight-icon {
+    font-size: 22px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .insight-label {
+    font-size: 11px;
+    color: var(--green);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+  }
+  .insight-text {
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.5;
+  }
+  .insight-text strong { color: var(--text); font-weight: 500; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 20px 20px 10px;
+  }
+
+  /* QUICK ACTIONS */
+  .add-btn {
+    margin: 16px 20px 0;
+    width: calc(100% - 40px);
+    background: var(--green);
+    border: none;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 18px;
+    border-radius: 18px;
+    cursor: pointer;
+    letter-spacing: 0.3px;
+    transition: transform 0.1s, opacity 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .add-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+  /* RECENT LIST */
+  .expense-list { padding: 0 20px; display: flex; flex-direction: column; gap: 10px; }
+  .expense-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .expense-icon {
+    width: 44px; height: 44px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+  .expense-info { flex: 1; min-width: 0; }
+  .expense-cat {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .expense-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .expense-amount {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--red);
+  }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #080c10ee;
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 10px 0 20px;
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: transform 0.15s;
+  }
+  .nav-item:active { transform: scale(0.9); }
+  .nav-icon { font-size: 22px; }
+  .nav-label { font-size: 10px; color: var(--text-muted); font-weight: 500; letter-spacing: 0.3px; }
+  .nav-item.active .nav-icon { filter: drop-shadow(0 0 6px var(--green)); }
+  .nav-item.active .nav-label { color: var(--green); }
+
+  /* ADD EXPENSE SCREEN */
+  .add-screen {
+    padding: 0 20px;
+  }
+  .screen-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 18px 20px 0;
+    margin-bottom: 8px;
+  }
+  .back-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .screen-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .amount-display {
+    margin: 24px 20px 0;
+    text-align: center;
+    padding: 32px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+  }
+  .amount-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
+  .amount-big {
+    font-family: 'Syne', sans-serif;
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -2px;
+    color: var(--green);
+  }
+  .amount-big.empty { color: var(--border); }
+
+  /* NUMPAD */
+  .numpad {
+    margin: 16px 20px 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .num-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    padding: 18px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background 0.1s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .num-btn:active { background: var(--surface3); transform: scale(0.94); }
+  .num-btn.del { color: var(--text-muted); font-size: 18px; }
+  .num-btn.zero { grid-column: span 2; }
+
+  /* CATEGORIES */
+  .cat-grid {
+    margin: 16px 20px 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .cat-btn {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    color: var(--text-dim);
+    font-size: 14px;
+    font-weight: 500;
+    padding: 14px 10px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+  }
+  .cat-btn.selected {
+    border-color: var(--green);
+    background: var(--green-dim);
+    color: var(--green);
+  }
+  .cat-btn .cat-em { font-size: 20px; }
+
+  .save-btn {
+    margin: 16px 20px 0;
+    width: calc(100% - 40px);
+    background: var(--green);
+    border: none;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 18px;
+    border-radius: 18px;
+    cursor: pointer;
+    opacity: 0.4;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .save-btn.ready { opacity: 1; }
+  .save-btn:active { transform: scale(0.97); }
+
+  /* ANALYTICS */
+  .analytics-screen { padding: 0 20px; }
+
+  .donut-wrap {
+    margin: 16px 20px 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .donut-svg { flex-shrink: 0; }
+  .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .legend-cat { font-size: 13px; color: var(--text-dim); flex: 1; }
+  .legend-pct { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+
+  .advice-list { display: flex; flex-direction: column; gap: 10px; }
+  .advice-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .advice-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+  .advice-text { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+  .advice-text strong { color: var(--text); }
+
+  .forecast-card {
+    margin: 0 20px 0;
+    background: linear-gradient(135deg, #1a0f0a 0%, #0d1419 100%);
+    border: 1px solid #ff4d6d30;
+    border-radius: 18px;
+    padding: 18px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .forecast-days {
+    font-family: 'Syne', sans-serif;
+    font-size: 44px;
+    font-weight: 800;
+    color: var(--red);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .forecast-label { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  .forecast-label strong { color: var(--text); display: block; font-size: 15px; margin-bottom: 2px; }
+
+  /* HISTORY */
+  .history-screen { padding: 0 20px; }
+
+  /* INCOME MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: #000000cc;
+    z-index: 200;
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--surface2);
+    border-radius: 28px 28px 0 0;
+    padding: 24px 20px 40px;
+    width: 100%;
+    transform: translateY(40px);
+    transition: transform 0.25s;
+    border-top: 1px solid var(--border);
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .modal-input {
+    width: 100%;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    padding: 16px 18px;
+    border-radius: 16px;
+    outline: none;
+    margin-bottom: 12px;
+  }
+  .modal-btn {
+    width: 100%;
+    background: var(--green);
+    border: none;
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 16px;
+    border-radius: 14px;
+    cursor: pointer;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 100px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--green);
+    color: #000;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 24px;
+    border-radius: 50px;
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 300;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .empty-icon { font-size: 40px; margin-bottom: 10px; }
+
+  /* Income pill */
+  .income-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--surface3);
+    border-radius: 20px;
+    padding: 4px 10px 4px 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 10px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+  }
+  .income-pill span { color: var(--green); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- DASHBOARD -->
+<div class="screen active" id="screen-dashboard">
+  <div class="topbar">
+    <div class="logo">Fin<span>ly</span></div>
+    <div class="avatar">💳</div>
+  </div>
+
+  <div class="balance-card">
+    <button class="balance-edit" onclick="openIncomeModal()" title="Изменить доход">✏️</button>
+    <div class="balance-label">Текущий баланс</div>
+    <div class="balance-amount" id="balance-display">
+      <span class="currency">₽</span><span id="balance-num">0</span>
+    </div>
+    <div class="income-pill" onclick="openIncomeModal()">
+      📥 Доход: <span id="income-display">не задан</span>
+    </div>
+    <div class="balance-stats">
+      <div class="balance-stat">
+        <div class="balance-stat-label">Сегодня</div>
+        <div class="balance-stat-value" id="today-stat">₽0</div>
+      </div>
+      <div class="balance-stat">
+        <div class="balance-stat-label">За неделю</div>
+        <div class="balance-stat-value" id="week-stat">₽0</div>
+      </div>
+      <div class="balance-stat">
+        <div class="balance-stat-label">За месяц</div>
+        <div class="balance-stat-value neutral" id="month-stat">₽0</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight-card" id="insight-card">
+    <div class="insight-icon" id="insight-icon">💡</div>
+    <div>
+      <div class="insight-label">Умный инсайт</div>
+      <div class="insight-text" id="insight-text">Добавь первый расход, и я помогу тебе понять, куда уходят деньги</div>
+    </div>
+  </div>
+
+  <button class="add-btn" onclick="showScreen('add')">
+    ＋ Добавить расход
+  </button>
+
+  <div class="section-title">Последние расходы</div>
+  <div class="expense-list" id="recent-list"></div>
+</div>
+
+<!-- ADD EXPENSE -->
+<div class="screen" id="screen-add">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('dashboard')">←</button>
+    <div class="screen-title">Новый расход</div>
+  </div>
+
+  <div class="amount-display">
+    <div class="amount-hint">Сумма</div>
+    <div class="amount-big empty" id="add-amount-display">0</div>
+  </div>
+
+  <div class="numpad">
+    <button class="num-btn" onclick="numPress('1')">1</button>
+    <button class="num-btn" onclick="numPress('2')">2</button>
+    <button class="num-btn" onclick="numPress('3')">3</button>
+    <button class="num-btn" onclick="numPress('4')">4</button>
+    <button class="num-btn" onclick="numPress('5')">5</button>
+    <button class="num-btn" onclick="numPress('6')">6</button>
+    <button class="num-btn" onclick="numPress('7')">7</button>
+    <button class="num-btn" onclick="numPress('8')">8</button>
+    <button class="num-btn" onclick="numPress('9')">9</button>
+    <button class="num-btn zero" onclick="numPress('0')">0</button>
+    <button class="num-btn del" onclick="numDel()">⌫</button>
+  </div>
+
+  <div class="section-title" style="padding-top:16px">Категория</div>
+  <div class="cat-grid" id="cat-grid">
+    <button class="cat-btn" data-cat="Еда" onclick="selectCat(this)"><span class="cat-em">🍕</span> Еда</button>
+    <button class="cat-btn" data-cat="Транспорт" onclick="selectCat(this)"><span class="cat-em">🚗</span> Транспорт</button>
+    <button class="cat-btn" data-cat="Развлечения" onclick="selectCat(this)"><span class="cat-em">🎮</span> Развлечения</button>
+    <button class="cat-btn" data-cat="Покупки" onclick="selectCat(this)"><span class="cat-em">🛍️</span> Покупки</button>
+    <button class="cat-btn" data-cat="Здоровье" onclick="selectCat(this)"><span class="cat-em">💊</span> Здоровье</button>
+    <button class="cat-btn" data-cat="Другое" onclick="selectCat(this)"><span class="cat-em">📦</span> Другое</button>
+  </div>
+
+  <button class="save-btn" id="save-btn" onclick="saveExpense()">Сохранить</button>
+</div>
+
+<!-- ANALYTICS -->
+<div class="screen" id="screen-analytics">
+  <div class="topbar">
+    <div class="logo">Ана<span>литика</span></div>
+  </div>
+  <div id="analytics-content"></div>
+</div>
+
+<!-- HISTORY -->
+<div class="screen" id="screen-history">
+  <div class="topbar">
+    <div class="logo">Исто<span>рия</span></div>
+  </div>
+  <div class="expense-list" id="history-list" style="padding:0 20px"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-dashboard" onclick="showScreen('dashboard')">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">Главная</div>
+  </div>
+  <div class="nav-item" id="nav-analytics" onclick="showScreen('analytics')">
+    <div class="nav-icon">📊</div>
+    <div class="nav-label">Аналитика</div>
+  </div>
+  <div class="nav-item" id="nav-history" onclick="showScreen('history')">
+    <div class="nav-icon">📋</div>
+    <div class="nav-label">История</div>
+  </div>
+</nav>
+
+<!-- INCOME MODAL -->
+<div class="modal-overlay" id="income-modal" onclick="closeIncomeModal(event)">
+  <div class="modal">
+    <div class="modal-title">Задать доход</div>
+    <input class="modal-input" id="income-input" type="number" placeholder="50 000" inputmode="numeric" />
+    <button class="modal-btn" onclick="saveIncome()">Сохранить</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────
+let state = {
+  income: 0,
+  expenses: []
+};
+
+const CAT_COLORS = {
+  'Еда': '#00e676',
+  'Транспорт': '#40c4ff',
+  'Развлечения': '#ea80fc',
+  'Покупки': '#ffd740',
+  'Здоровье': '#ff6d6d',
+  'Другое': '#78909c'
+};
+const CAT_ICONS = {
+  'Еда':'🍕','Транспорт':'🚗','Развлечения':'🎮','Покупки':'🛍️','Здоровье':'💊','Другое':'📦'
+};
+
+let addAmount = '';
+let addCat = '';
+
+// ─── STORAGE ──────────────────────────────────────────────────────────
+function load() {
+  try {
+    const s = localStorage.getItem('finly_state');
+    if (s) state = JSON.parse(s);
+  } catch(e) {}
+}
+function save() {
+  localStorage.setItem('finly_state', JSON.stringify(state));
+}
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  const nav = document.getElementById('nav-' + name);
+  if (nav) nav.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'analytics') renderAnalytics();
+  if (name === 'history') renderHistory();
+  if (name === 'add') resetAdd();
+}
+
+// ─── DASHBOARD ────────────────────────────────────────────────────────
+function renderDashboard() {
+  const total = state.expenses.reduce((a, e) => a + e.amount, 0);
+  const balance = state.income - total;
+  document.getElementById('balance-num').textContent = fmt(balance);
+  document.getElementById('balance-display').style.color = balance >= 0 ? 'var(--text)' : 'var(--red)';
+  document.getElementById('income-display').textContent = state.income ? '₽' + fmt(state.income) : 'не задан';
+
+  const now = new Date();
+  const todayStr = dateStr(now);
+  const weekAgo = new Date(now - 7*86400000);
+
+  const todayExp = state.expenses.filter(e => e.date === todayStr).reduce((a,e)=>a+e.amount,0);
+  const weekExp = state.expenses.filter(e => new Date(e.date) >= weekAgo).reduce((a,e)=>a+e.amount,0);
+  const monthExp = state.expenses.filter(e => {
+    const d = new Date(e.date);
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }).reduce((a,e)=>a+e.amount,0);
+
+  document.getElementById('today-stat').textContent = '₽' + fmt(todayExp);
+  document.getElementById('week-stat').textContent = '₽' + fmt(weekExp);
+  document.getElementById('month-stat').textContent = '₽' + fmt(monthExp);
+
+  renderInsight(total, monthExp);
+  renderRecent();
+}
+
+function renderInsight(total, monthExp) {
+  const icon = document.getElementById('insight-icon');
+  const text = document.getElementById('insight-text');
+  const card = document.getElementById('insight-card');
+
+  if (state.expenses.length === 0) {
+    icon.textContent = '💡';
+    text.innerHTML = 'Добавь первый расход — и я покажу, куда уходят твои деньги';
+    card.style.borderColor = 'var(--green-mid)';
+    return;
+  }
+
+  // Calculate categories
+  const cats = {};
+  state.expenses.forEach(e => { cats[e.cat] = (cats[e.cat]||0) + e.amount; });
+  const topCat = Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+  const topPct = total ? Math.round(topCat[1]/total*100) : 0;
+
+  // Days left
+  const daysInMonth = 30;
+  const dayOfMonth = new Date().getDate();
+  const dailyAvg = dayOfMonth > 0 ? monthExp / dayOfMonth : 0;
+  const daysLeft = state.income && dailyAvg > 0 ? Math.round((state.income - total) / dailyAvg) : null;
+
+  let insights = [];
+
+  if (topPct > 40) {
+    insights.push({
+      icon: '⚠️',
+      text: `Ты тратишь <strong>${topPct}% на ${topCat[0]}</strong> — это выше нормы. Попробуй урезать эту категорию.`,
+      border: 'var(--yellow)'
+    });
+  }
+  if (daysLeft !== null && daysLeft < 14) {
+    insights.push({
+      icon: '🔥',
+      text: `При таком темпе деньги закончатся через <strong>${daysLeft} ${days(daysLeft)}</strong>. Пора тормозить.`,
+      border: 'var(--red)'
+    });
+  }
+  if (topPct <= 30 && state.expenses.length >= 3) {
+    insights.push({
+      icon: '✅',
+      text: `Расходы распределены равномерно — <strong>это хорошо</strong>. Продолжай в том же духе.`,
+      border: 'var(--green-mid)'
+    });
+  }
+  if (insights.length === 0) {
+    insights.push({
+      icon: '📈',
+      text: `Самая крупная категория — <strong>${topCat[0]} (${topPct}%)</strong>. Следи, чтобы не выросло.`,
+      border: 'var(--green-mid)'
+    });
+  }
+
+  const ins = insights[0];
+  icon.textContent = ins.icon;
+  text.innerHTML = ins.text;
+  card.style.borderColor = ins.border;
+}
+
+function renderRecent() {
+  const list = document.getElementById('recent-list');
+  const recent = [...state.expenses].reverse().slice(0, 5);
+  if (recent.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">🧾</div>Расходов пока нет</div>`;
+    return;
+  }
+  list.innerHTML = recent.map(e => expenseHTML(e)).join('');
+}
+
+function expenseHTML(e) {
+  const bg = (CAT_COLORS[e.cat] || '#78909c') + '22';
+  return `<div class="expense-item">
+    <div class="expense-icon" style="background:${bg}">${CAT_ICONS[e.cat]||'📦'}</div>
+    <div class="expense-info">
+      <div class="expense-cat">${e.cat}</div>
+      <div class="expense-date">${formatDate(e.date)}</div>
+    </div>
+    <div class="expense-amount">−₽${fmt(e.amount)}</div>
+  </div>`;
+}
+
+// ─── ADD EXPENSE ──────────────────────────────────────────────────────
+function resetAdd() {
+  addAmount = '';
+  addCat = '';
+  document.getElementById('add-amount-display').textContent = '0';
+  document.getElementById('add-amount-display').classList.add('empty');
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('save-btn').classList.remove('ready');
+}
+
+function numPress(n) {
+  if (addAmount.length >= 7) return;
+  addAmount += n;
+  updateAmountDisplay();
+}
+function numDel() {
+  addAmount = addAmount.slice(0, -1);
+  updateAmountDisplay();
+}
+function updateAmountDisplay() {
+  const el = document.getElementById('add-amount-display');
+  const val = addAmount || '0';
+  el.textContent = fmt(parseInt(val)||0);
+  el.classList.toggle('empty', !addAmount);
+  checkSaveReady();
+}
+function selectCat(btn) {
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  addCat = btn.dataset.cat;
+  checkSaveReady();
+}
+function checkSaveReady() {
+  document.getElementById('save-btn').classList.toggle('ready', !!addAmount && !!addCat);
+}
+function saveExpense() {
+  if (!addAmount || !addCat) return;
+  const exp = { amount: parseInt(addAmount), cat: addCat, date: dateStr(new Date()), id: Date.now() };
+  state.expenses.push(exp);
+  save();
+  showToast('Расход добавлен ✓');
+  showScreen('dashboard');
+}
+
+// ─── ANALYTICS ────────────────────────────────────────────────────────
+function renderAnalytics() {
+  const el = document.getElementById('analytics-content');
+  const total = state.expenses.reduce((a,e)=>a+e.amount,0);
+
+  if (state.expenses.length === 0) {
+    el.innerHTML = `<div class="empty-state" style="margin-top:60px"><div class="empty-icon">📊</div>Нет данных для анализа<br>Добавь первые расходы</div>`;
+    return;
+  }
+
+  const cats = {};
+  state.expenses.forEach(e => { cats[e.cat] = (cats[e.cat]||0) + e.amount; });
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+
+  // Donut
+  const radius = 54, cx = 70, cy = 70, stroke = 16;
+  const circ = 2 * Math.PI * radius;
+  let offset = 0;
+  let segments = '';
+  sorted.forEach(([cat, amt]) => {
+    const pct = amt/total;
+    const dash = pct * circ;
+    const col = CAT_COLORS[cat] || '#78909c';
+    segments += `<circle cx="${cx}" cy="${cy}" r="${radius}" fill="none" stroke="${col}" stroke-width="${stroke}" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="butt"/>`;
+    offset += dash;
+  });
+
+  const legend = sorted.map(([cat, amt]) => {
+    const pct = Math.round(amt/total*100);
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${CAT_COLORS[cat]||'#78909c'}"></div>
+      <div class="legend-cat">${cat}</div>
+      <div class="legend-pct" style="color:${CAT_COLORS[cat]||'#78909c'}">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // Advice
+  const advices = [];
+  sorted.forEach(([cat, amt]) => {
+    const pct = Math.round(amt/total*100);
+    if (pct > 40) advices.push({ icon:'⚠️', text: `Ты тратишь <strong>${pct}% на ${cat}</strong> — больше 40%. Это сигнал задуматься.` });
+    else if (pct > 30) advices.push({ icon:'📌', text: `<strong>${cat}</strong> занимает ${pct}% бюджета. Немного много, следи.` });
+  });
+  if (total > (state.income * 0.8) && state.income) advices.push({ icon:'🚨', text: `Ты уже потратил <strong>${Math.round(total/state.income*100)}% дохода</strong>. Будь аккуратнее.` });
+  if (advices.length === 0) advices.push({ icon:'✅', text: `Расходы в норме. Ты держишь бюджет под контролем — <strong>отличная работа</strong>.` });
+
+  // Forecast
+  const dayOfMonth = new Date().getDate();
+  const dailyAvg = dayOfMonth > 0 ? total / dayOfMonth : 0;
+  let forecastHTML = '';
+  if (state.income && dailyAvg > 0) {
+    const balance = state.income - total;
+    const daysLeft = Math.max(0, Math.round(balance / dailyAvg));
+    forecastHTML = `
+    <div class="section-title">Прогноз</div>
+    <div class="forecast-card" style="margin:0 20px">
+      <div class="forecast-days">${daysLeft}</div>
+      <div class="forecast-label"><strong>дней до нуля</strong>При текущем темпе трат деньги закончатся через ${daysLeft} ${days(daysLeft)}</div>
+    </div>`;
+  }
+
+  el.innerHTML = `
+    <div class="donut-wrap">
+      <svg class="donut-svg" width="140" height="140" viewBox="0 0 140 140">
+        <circle cx="70" cy="70" r="54" fill="none" stroke="var(--surface3)" stroke-width="16"/>
+        ${segments}
+      </svg>
+      <div class="donut-legend">${legend}</div>
+    </div>
+    <div class="section-title">Советы</div>
+    <div class="advice-list" style="padding:0 20px">
+      ${advices.map(a=>`<div class="advice-card"><div class="advice-icon">${a.icon}</div><div class="advice-text">${a.text}</div></div>`).join('')}
+    </div>
+    ${forecastHTML}
+    <div style="height:16px"></div>
+  `;
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const all = [...state.expenses].reverse();
+  if (all.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">📋</div>История пуста</div>`;
+    return;
+  }
+  list.innerHTML = all.map(e => expenseHTML(e)).join('');
+}
+
+// ─── INCOME MODAL ─────────────────────────────────────────────────────
+function openIncomeModal() {
+  document.getElementById('income-input').value = state.income || '';
+  document.getElementById('income-modal').classList.add('open');
+  setTimeout(() => document.getElementById('income-input').focus(), 300);
+}
+function closeIncomeModal(e) {
+  if (e.target === document.getElementById('income-modal')) {
+    document.getElementById('income-modal').classList.remove('open');
+  }
+}
+function saveIncome() {
+  const val = parseInt(document.getElementById('income-input').value);
+  if (val > 0) { state.income = val; save(); }
+  document.getElementById('income-modal').classList.remove('open');
+  renderDashboard();
+  showToast('Доход сохранён ✓');
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────
+function fmt(n) { return Number(n).toLocaleString('ru-RU'); }
+function dateStr(d) { return d.toISOString().split('T')[0]; }
+function formatDate(str) {
+  const d = new Date(str);
+  const opts = { day:'numeric', month:'long' };
+  const today = dateStr(new Date());
+  if (str === today) return 'Сегодня';
+  const yesterday = dateStr(new Date(Date.now()-86400000));
+  if (str === yesterday) return 'Вчера';
+  return d.toLocaleDateString('ru-RU', opts);
+}
+function days(n) {
+  if (n%10===1 && n%100!==11) return 'день';
+  if ([2,3,4].includes(n%10) && ![12,13,14].includes(n%100)) return 'дня';
+  return 'дней';
+}
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ─── TELEGRAM ─────────────────────────────────────────────────────────
+if (window.Telegram?.WebApp) {
+  const tg = window.Telegram.WebApp;
+  tg.expand();
+  tg.setHeaderColor('#080c10');
+  tg.setBackgroundColor('#080c10');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+load();
+renderDashboard();
+</script>
+</body>
+</html>
